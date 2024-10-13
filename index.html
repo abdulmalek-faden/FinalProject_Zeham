@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Best Route</title>
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <!-- Set the height of the map -->
+    <style>
+      #map {
+        height: 500px;
+      }
+
+      .leaflet-routing-container {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Map container -->
+    <div id="map"></div>
+
+    <script>
+      function displayMap(waypoints) {
+      // Initialize the map and set its view to a specific location (latitude, longitude) and zoom level
+      var map = L.map('map').setView([51.505, -0.09], 13);
+
+      // Add a tile layer from OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // // Define waypoints with multiple intermediate locations
+      // var waypoints = [
+      //     L.latLng(51.505, -0.09),  // Start point
+      //     L.latLng(51.51, -0.1),    // Intermediate point 1
+      //     L.latLng(51.515, -0.11),  // Intermediate point 2
+      //     L.latLng(51.52, -0.12)    // Finish point
+      // ];
+
+      // Create a routing control with waypoints but only display markers for start and finish
+      var control = L.Routing.control({
+          waypoints: waypoints,        // Define multiple waypoints
+          routeWhileDragging: false,   // Disable route dragging
+          draggableWaypoints: false,   // Disable draggable waypoints
+          addWaypoints: false,         // Disable adding new waypoints by clicking on the map
+
+          // Customizing the markers to only appear at start and finish
+          createMarker: function(i, waypoint, n) {
+            
+                  return L.marker(waypoint.latLng, {
+                      draggable: false  // Ensure non-draggable marker
+                  }).bindPopup('Waypoint #' + i + (i == 0 ? " (Start)" : (i == n-1 ? " (Finish)" : "")));  // Add popups for clarity
+
+    }
+      }).addTo(map);
+      }
+
+      function getBestRoute() {
+        var bestRouteURL = `http://127.0.0.1:5000/best-route`;
+        fetch(bestRouteURL, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then((response) => {
+            if (!response) {
+              throw new Error(
+                'Network response was not ok ' + response.statusText
+              );
+            }
+            return response.json();
+          })
+          .then((raw) => {
+            console.log(raw)
+            let waypoints = []
+            raw.forEach((point) => {
+              // L.latLng(51.505, -0.09),
+              let waypoint = L.latLng(point[0], point[1])
+              waypoints.push(waypoint)
+            })
+            console.log(waypoints)
+            displayMap(waypoints)
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+
+      getBestRoute()
+    </script>
+  </body>
+</html>
